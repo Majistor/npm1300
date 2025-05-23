@@ -1,0 +1,196 @@
+/*
+ * Copyright (c) 2023 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+// &i2c1_default {
+// 	group1 {
+// 		bias-pull-up;
+// 	};
+// };
+
+// &npm1300_ek_pmic {
+// 	host-int-gpios = <&gpio1 12 0>;
+// 	pmic-int-pin = <3>;
+// };
+
+#include <dt-bindings/regulator/npm1300.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+    pwmleds {
+        /delete-node/ pwm_led_0;
+    };
+
+    leds {
+        /delete-node/ led_0;
+        /delete-node/ led_1;
+        /delete-node/ led_2;
+        /delete-node/ led_3;
+    };
+
+
+    buttons {
+        /delete-node/ button_0;
+        /delete-node/ button_1;
+        /delete-node/ button_2;
+        /delete-node/ button_3;
+    };
+
+    aliases {
+		/delete-property/ sw0;
+        /delete-property/ sw1;
+        /delete-property/ sw2;
+        /delete-property/ sw3;
+        /delete-property/ led0;
+        /delete-property/ led1;
+        /delete-property/ led2;
+        /delete-property/ led3;
+        /delete-property/ pwm-led0;
+        /delete-property/ bootloader-led0;
+        /delete-property/ mcuboot-button0;
+        /delete-property/ mcuboot-led0;
+        /delete-property/ spi-flash0;
+        
+    };
+
+};
+
+&uart0 {
+    status = "disabled";
+};
+
+&qspi {
+    status = "disabled";
+};
+
+&spi4 {
+    status = "disabled";
+};
+
+
+&pinctrl {
+    i2c1_default: i2c1_default {
+        group1 {
+            // psels = <NRF_PSEL(TWIM_SDA, 1, 2)>, <NRF_PSEL(TWIM_SCL, 1, 3)>;
+            psels = <NRF_PSEL(TWIM_SDA, 1, 4)>, <NRF_PSEL(TWIM_SCL, 1, 5)>;
+            bias-pull-up;
+        };
+    };
+
+    i2c1_sleep: i2c1_sleep {
+        group1 {
+            // psels = <NRF_PSEL(TWIM_SDA, 1, 2)>, <NRF_PSEL(TWIM_SCL, 1, 3)>;
+            psels = <NRF_PSEL(TWIM_SDA, 1, 4)>, <NRF_PSEL(TWIM_SCL, 1, 5)>;
+            
+            bias-pull-up;
+        };
+    };
+
+};
+
+
+&i2c1 {
+    status = "okay";
+    compatible = "nordic,nrf-twim";
+    clock-frequency = <I2C_BITRATE_FAST>;
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-1 = <&i2c1_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    npm1300_ek_pmic: pmic@6b {
+        compatible = "nordic,npm1300";
+        reg = <0x6b>;
+        host-int-gpios = <&gpio0 22 0>;
+        pmic-int-pin = <3>;
+
+        npm1300_ek_gpio: gpio-controller {
+            compatible = "nordic,npm1300-gpio";
+            gpio-controller;
+            #gpio-cells = <2>;
+            ngpios = <5>;
+        };
+
+        npm1300_ek_regulators: regulators {
+            compatible = "nordic,npm1300-regulator";
+            dvs-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>,
+                        <&gpio0 18 GPIO_ACTIVE_LOW>;
+
+            npm1300_ek_buck1: BUCK1 {
+                regulator-init-microvolt = <2400000>;
+                // regulator-min-microvolt = <1800000>;
+                // regulator-max-microvolt = <3300000>;
+            };
+
+            npm1300_ek_buck2: BUCK2 {
+                // regulator-init-microvolt = <1800000>;
+                // retention-microvolt = <2500000>;
+                regulator-min-microvolt = <1000000>;
+                regulator-max-microvolt = <3300000>;
+                regulator-init-microvolt = <2400000>;
+                regulator-always-on;
+                regulator-boot-on;
+                enable-gpios = <&npm1300_ek_gpio 1 GPIO_ACTIVE_LOW>;
+                retention-gpios = <&npm1300_ek_gpio 2 GPIO_ACTIVE_HIGH>;
+                pwm-gpios = <&npm1300_ek_gpio 2 GPIO_ACTIVE_LOW>;
+                // regulator-always-on;
+                // regulator-boot-on;
+            };
+
+            npm1300_ek_ldo1: LDO1 {
+                // regulator-min-microvolt = <1000000>;
+                // regulator-max-microvolt = <3300000>;
+                regulator-initial-mode = <NPM1300_LDSW_MODE_LDO>;
+                enable-gpios = <&npm1300_ek_gpio 2 GPIO_ACTIVE_LOW>;
+            };
+
+            npm1300_ek_ldo2: LDO2 {
+                // regulator-min-microvolt = <1000000>;
+                // regulator-max-microvolt = <3300000>;
+                regulator-min-microvolt = <1800000>;
+                regulator-max-microvolt = <3300000>;
+                regulator-init-microvolt = <1800000>;
+                // regulator-initial-mode = <NPM1300_LDSW_MODE_LDSW>;
+                regulator-initial-mode = <NPM1300_LDSW_MODE_LDO>;
+                enable-gpios = <&npm1300_ek_gpio 2 GPIO_ACTIVE_LOW>;
+                regulator-always-on;
+                regulator-boot-on;
+            };
+        };
+
+        npm1300_ek_charger: charger {
+            compatible = "nordic,npm1300-charger";
+            // term-microvolt = <4150000>;
+            term-microvolt = <4200000>;
+            term-warm-microvolt = <4000000>;
+            // current-microamp = <150000>;
+            // current-microamp = <120000>;
+            current-microamp = <400000>;
+            dischg-limit-microamp = <1000000>;
+            // dischg-limit-microamp = <600000>;
+            vbus-limit-microamp = <500000>;
+            thermistor-ohms = <10000>;
+            thermistor-beta = <3380>;
+            charging-enable;
+            vbatlow-charge-enable;
+        };
+
+        npm1300_ek_buttons: buttons {
+            compatible = "gpio-keys";
+            pmic_button0: pmic_button_0 {
+                gpios = <&npm1300_ek_gpio 0 GPIO_ACTIVE_HIGH>;
+                label = "Pmic button switch 0";
+                zephyr,code = <INPUT_KEY_0>;
+            };
+        };
+
+        npm1300_ek_leds: leds {
+            compatible = "nordic,npm1300-led";
+            nordic,led0-mode = "error";
+            nordic,led1-mode = "charging";
+            nordic,led2-mode = "host";
+        };
+
+    };
+};

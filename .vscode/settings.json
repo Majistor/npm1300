@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.inc": "c"
+    },
+    "idf.pythonInstallPath": "/usr/bin/python3"
+}
