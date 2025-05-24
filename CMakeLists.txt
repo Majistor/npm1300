@@ -9,6 +9,6 @@ set(SHIELD npm1300_ek)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-project(npm1300_fuel_gauge_1)
+project(npm1300)
 
 add_subdirectory(src)

@@ -22,7 +22,7 @@
 /* nPM1300 CHARGER.BCHGCHARGESTATUS.CONSTANTCURRENT register bitmask */
 #define NPM1300_CHG_STATUS_CC_MASK BIT(3)
 
-#define MAX_CHG_CURRENT_MA 50
+#define MAX_CHG_CURRENT_MA 200
 
 static float max_charge_current;
 static float term_charge_current;
@@ -32,32 +32,36 @@ static const struct battery_model battery_model = {
 #include "battery_model.inc"
 };
 
-int npm1300_enter_ship_mode(const struct device *dev, uint32_t time_ms)
-{
-    int ret = 0;
+
+
+
+
+// int npm1300_enter_ship_mode(const struct device *dev, uint32_t time_ms)
+// {
+//     int ret = 0;
     
-    if (dev == NULL) {
-        return -EINVAL;
-    }
+//     if (dev == NULL) {
+//         return -EINVAL;
+//     }
     
-    /* If a wake-up timer is requested, configure it first */
-    if (time_ms > 0) {
-        ret = mfd_npm1300_set_timer(dev, time_ms);
-        if (ret != 0) {
-            printk("Failed to set timer for Ship mode: %d\n", ret);
-            return ret;
-        }
-    }
+//     /* If a wake-up timer is requested, configure it first */
+//     if (time_ms > 0) {
+//         ret = mfd_npm1300_set_timer(dev, time_ms);
+//         if (ret != 0) {
+//             printk("Failed to set timer for Ship mode: %d\n", ret);
+//             return ret;
+//         }
+//     }
     
-    /* Enter Ship mode */
-    ret = mfd_npm1300_reg_write(dev, SHIP_BASE, SHIP_OFFSET_HIBERNATE, 1U);
-    if (ret != 0) {
-        printk("Failed to enter Ship mode: %d\n", ret);
-        return ret;
-    }
+//     /* Enter Ship mode */
+//     ret = mfd_npm1300_reg_write(dev, SHIP_BASE, SHIP_OFFSET_HIBERNATE, 1U);
+//     if (ret != 0) {
+//         printk("Failed to enter Ship mode: %d\n", ret);
+//         return ret;
+//     }
     
-    return 0;
-}
+//     return 0;
+// }
 
 // int mfd_npm1300_hibernate(const struct device *dev, uint32_t time_ms)
 // {
@@ -68,69 +72,69 @@ int npm1300_enter_ship_mode(const struct device *dev, uint32_t time_ms)
 // 	return mfd_npm1300_reg_write(dev, SHIP_BASE, SHIP_OFFSET_HIBERNATE, 1U);
 // }
 
-int set_charge_current(const struct device *charger, int current_ma)
-{
-	struct sensor_value value;
-	int ret;
+// int set_charge_current(const struct device *charger, int current_ma)
+// {
+// 	struct sensor_value value;
+// 	int ret;
 
-	if (current_ma > MAX_CHG_CURRENT_MA)
-	{
-		current_ma = MAX_CHG_CURRENT_MA;
-	}
+// 	if (current_ma > MAX_CHG_CURRENT_MA)
+// 	{
+// 		current_ma = MAX_CHG_CURRENT_MA;
+// 	}
 
-	// Convert to microamps and set the value
-	value.val1 = 0;
-	value.val2 = 0;
+// 	// Convert to microamps and set the value
+// 	value.val1 = 0;
+// 	value.val2 = 0;
 
-	ret = sensor_attr_set(charger, SENSOR_CHAN_GAUGE_DESIRED_CHARGING_CURRENT,
-						  SENSOR_ATTR_CONFIGURATION, &value);
+// 	ret = sensor_attr_set(charger, SENSOR_CHAN_GAUGE_DESIRED_CHARGING_CURRENT,
+// 						  SENSOR_ATTR_CONFIGURATION, &value);
 
-	if (ret < 0)
-	{
-		printk("Failed to disable chrager\n");
-		return ret;
-	}
-	printk("Charging current disabled\n");
-	// k_msleep(5000);
+// 	if (ret < 0)
+// 	{
+// 		printk("Failed to disable chrager\n");
+// 		return ret;
+// 	}
+// 	printk("Charging current disabled\n");
+// 	// k_msleep(5000);
 
-	// value.val1 = current_ma/4;
-	// value.val2 = current_ma%2==0 ? 0 : 1;
-	value.val1 = current_ma / 1000; // Millions part
-	value.val2 = (current_ma % 1000) * 1000;
-	ret = sensor_attr_set(charger, SENSOR_CHAN_CURRENT,
-						  SENSOR_ATTR_CONFIGURATION, &value);
+// 	// value.val1 = current_ma/4;
+// 	// value.val2 = current_ma%2==0 ? 0 : 1;
+// 	value.val1 = current_ma / 1000; // Millions part
+// 	value.val2 = (current_ma % 1000) * 1000;
+// 	ret = sensor_attr_set(charger, SENSOR_CHAN_CURRENT,
+// 						  SENSOR_ATTR_CONFIGURATION, &value);
 
-	if (ret < 0)
-	{
-		printk("Failed to set VBUS current limit (%d mA)\n", current_ma);
-		return ret;
-	}
+// 	if (ret < 0)
+// 	{
+// 		printk("Failed to set VBUS current limit (%d mA)\n", current_ma);
+// 		return ret;
+// 	}
 
-	value.val1 = 1;
-	value.val2 = 0;
+// 	value.val1 = 1;
+// 	value.val2 = 0;
 
-	ret = sensor_attr_set(charger, SENSOR_CHAN_GAUGE_DESIRED_CHARGING_CURRENT,
-						  SENSOR_ATTR_CONFIGURATION, &value);
+// 	ret = sensor_attr_set(charger, SENSOR_CHAN_GAUGE_DESIRED_CHARGING_CURRENT,
+// 						  SENSOR_ATTR_CONFIGURATION, &value);
 
-	if (ret < 0)
-		return ret;
+// 	if (ret < 0)
+// 		return ret;
 
-	printk("Requested VBUS current limit: %d mA\n", current_ma);
+// 	printk("Requested VBUS current limit: %d mA\n", current_ma);
 
-	/* 4) Read back VBUS limit active flag */
-	struct sensor_value lim;
-	ret = sensor_attr_get(charger,
-						  SENSOR_CHAN_GAUGE_DESIRED_CHARGING_CURRENT,
-						  SENSOR_ATTR_CONFIGURATION,
-						  &lim);
-	if (ret == 0)
-	{
-		printk("VBUS current-limit active? %s\n",
-			   lim.val1 ? "yes" : "no");
-	}
+// 	/* 4) Read back VBUS limit active flag */
+// 	struct sensor_value lim;
+// 	ret = sensor_attr_get(charger,
+// 						  SENSOR_CHAN_GAUGE_DESIRED_CHARGING_CURRENT,
+// 						  SENSOR_ATTR_CONFIGURATION,
+// 						  &lim);
+// 	if (ret == 0)
+// 	{
+// 		printk("VBUS current-limit active? %s\n",
+// 			   lim.val1 ? "yes" : "no");
+// 	}
 
-	return ret;
-}
+// 	return ret;
+// }
 
 static int read_sensors(const struct device *charger,
 						float *voltage, float *current, float *temp, int32_t *chg_status)
@@ -183,7 +187,7 @@ int fuel_gauge_init(const struct device *charger)
 	term_charge_current = max_charge_current / 10.f;
 
 	nrf_fuel_gauge_init(&parameters, NULL);
-	set_charge_current(charger, MAX_CHG_CURRENT_MA);
+//	set_charge_current(charger, MAX_CHG_CURRENT_MA);
 
 	ref_time = k_uptime_get();
 
